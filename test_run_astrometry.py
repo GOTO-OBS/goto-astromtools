@@ -1,5 +1,4 @@
 import numpy as np
-from time import time
 from astropy.wcs import WCS
 from astropy.io import fits
 
@@ -16,21 +15,18 @@ def astrom_task(infilepath):
 
         Returns: lots of summary statistics as a placeholder for actual QA functions.
     '''
-    tick_xmatch = time()
     _platecoords, _skycoords = gen_xmatch(infilepath, prune=True)
 
+    ### If field is dense even after the pruning in gen_xmatch, reduce density
     if len(_platecoords) > 40000:
         _platecoords, _skycoords = reduce_density(_platecoords, _skycoords, 2)
 
-    tock_xmatch = time()
     header = fits.getheader(infilepath, 1)
     head_wcs = WCS(header)
     resid_before = (head_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
 
-    tick_fit = time()
     new_wcs = fit_astrom_simult(_platecoords, _skycoords, header)
     resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
-    tock_fit = time()
 
     filename = infilepath.split("/")[-1]
     pre_med = np.average(np.median(resid_before, axis=0))
@@ -39,11 +35,9 @@ def astrom_task(infilepath):
     post_rms = np.average(np.std(resid, axis=0))
     pre_chisq = np.sum(resid_before**2)
     post_chisq = np.sum(resid**2)
-    fittime = np.round(tock_fit - tick_fit, 3)
-    xmatchtime = np.round(tock_xmatch - tick_xmatch, 3)
     sourcedens = len(resid)
 
-    output = [filename, pre_med, post_med, pre_rms, post_rms, pre_chisq, post_chisq, fittime, xmatchtime, sourcedens]
+    output = [filename, pre_med, post_med, pre_rms, post_rms, pre_chisq, post_chisq, sourcedens]
     return output
 
 print(astrom_task(root_path))

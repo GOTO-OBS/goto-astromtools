@@ -28,7 +28,6 @@ def gen_xmatch(fpath, prune):
     '''
     hdul = fits.open(fpath, mode='readonly')
     header = hdul[1].header
-    imagedata = hdul[1].data
     photom_table = Table(hdul[3].data)
     hdul.close()
 
