@@ -4,7 +4,7 @@ from astropy.wcs import WCS
 from astropy.io import fits
 
 #### internal modules
-from crossmatching import gen_xmatch, isotropise
+from crossmatching import gen_xmatch, reduce_density
 from simult_fit import fit_astrom_simult
 
 
@@ -20,7 +20,7 @@ def astrom_task(infilepath):
     _platecoords, _skycoords = gen_xmatch(infilepath, prune=True)
 
     if len(_platecoords) > 40000:
-        _platecoords, _skycoords = isotropise(_platecoords, _skycoords, 2)
+        _platecoords, _skycoords = reduce_density(_platecoords, _skycoords, 2)
 
     tock_xmatch = time()
     header = fits.getheader(infilepath, 1)
