@@ -17,7 +17,7 @@ def astrom_task(infilepath):
         Returns: lots of summary statistics as a placeholder for actual QA functions.
     '''
     tick_xmatch = time()
-    _platecoords, _skycoords = gen_xmatch(infilepath)
+    _platecoords, _skycoords = gen_xmatch(infilepath, prune=False)
     tock_xmatch = time()
     header = fits.getheader(infilepath, 1)
     head_wcs = WCS(header)

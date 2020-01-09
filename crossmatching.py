@@ -5,10 +5,16 @@ from astropy.table import Table
 from astropy.time import Time
 import astropy.units as u
 from kdsphere import KDSphere
+from os import environ
 
-catsHTMpath = "/storage/goto/catalogs/"
+try:
+    catsHTMpath = environ["CATSHTM_PATH"]
+except:
+    print("Defaulting to /storage/goto/catalogs/ -- set your environment variable!")
+    catsHTMpath = "/storage/goto/catalogs/"
 
-def gen_xmatch(fpath):
+
+def gen_xmatch(fpath, prune):
     ''' Given a FITS file, cross-match the WCS position with a catalogs
         using the catsHTM module. Optionally, prune the catalog of 'bad'
         stars before performing the cross-match.
@@ -56,15 +62,19 @@ def gen_xmatch(fpath):
     table_xm = objects[mask]
     cat_table_xm = cat_table[nn_idxs_xm]
 
-    tot_prop_mot = np.sqrt(cat_table_xm["PMRA"]**2 + cat_table_xm["PMDec"]**2)/1000
-    int_prop_mot = tot_prop_mot * (Time(header["DATE-MID"]).decimalyear - cat_table_xm["Epoch"])
+    if prune:
+        tot_prop_mot = np.sqrt(cat_table_xm["PMRA"]**2 + cat_table_xm["PMDec"]**2)/1000
+        int_prop_mot = tot_prop_mot * (Time(header["DATE-MID"]).decimalyear - cat_table_xm["Epoch"])
 
-    pmflg = ~np.isnan(int_prop_mot) & (int_prop_mot < 1)
-    print("Proper motion cut: %s" % np.sum(~pmflg))
-    goodflg = (table_xm["s2n"] > 20)
-    print("Star quality cut: %s" % np.sum(~goodflg))
-    flg = pmflg & goodflg
-    print("%s of %s sources included" % (np.sum(flg), len(flg)))
+        pmflg = ~np.isnan(int_prop_mot) & (int_prop_mot < 1)
+        print("Proper motion cut: %s" % np.sum(~pmflg))
+        goodflg = (table_xm["s2n"] > 20)
+        print("Star quality cut: %s" % np.sum(~goodflg))
+        flg = pmflg & goodflg
+        print("%s of %s sources included" % (np.sum(flg), len(flg)))
+    else:
+        ### set flag to all true.
+        flg = np.full((len(cat_table_xm)), True)
 
     # Write out all relevant numbers here
     _ras = (cat_table_xm["RA"])[flg]
