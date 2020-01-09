@@ -63,15 +63,31 @@ def gen_xmatch(fpath, prune):
     cat_table_xm = cat_table[nn_idxs_xm]
 
     if prune:
+        ### Gaia recommended quality flags
+        astrom_excess_noise_flg = ~np.isnan(cat_table_xm["ExcessNoise"]) & (cat_table_xm["ExcessNoise"] < 1)
+        plx_exists_flg = ~np.isnan(cat_table_xm["Plx"])
+        nan_cleaned = astrom_excess_noise_flg & plx_exists_flg
+        plx_cut_flg = cat_table_xm["Plx"]/cat_table_xm["ErrPlx"] > 5
+
+        astrom_cut_flg = astrom_excess_noise_flg & plx_exists_flg & plx_cut_flg
+
+        # SExtractor cuts
+        sat_flag = table_xm["flags"] < 4 # Remove all saturated (and worse) stars from solution
+        snr_flag = table_xm["s2n"] > 20
+        photom_cut_flg = sat_flag & snr_flag
+
+        #### Reject high proper motion field stars.
         tot_prop_mot = np.sqrt(cat_table_xm["PMRA"]**2 + cat_table_xm["PMDec"]**2)/1000
         int_prop_mot = tot_prop_mot * (Time(header["DATE-MID"]).decimalyear - cat_table_xm["Epoch"])
-
         pmflg = ~np.isnan(int_prop_mot) & (int_prop_mot < 1)
-        print("Proper motion cut: %s" % np.sum(~pmflg))
-        goodflg = (table_xm["s2n"] > 20)
-        print("Star quality cut: %s" % np.sum(~goodflg))
-        flg = pmflg & goodflg
-        print("%s of %s sources included" % (np.sum(flg), len(flg)))
+
+        flg = astrom_cut_flg & photom_cut_flg & pmflg
+
+        ### Quick sanity check to make sure the field isn't getting too sparse
+        avg_density = (1022**2 / (sizex*sizey))*np.sum(flg)
+
+        if avg_density < 80:
+            print("Less than 80 sources per tile, caution.")
     else:
         ### set flag to all true.
         flg = np.full((len(cat_table_xm)), True)

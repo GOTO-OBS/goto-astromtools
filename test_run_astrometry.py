@@ -8,7 +8,7 @@ from crossmatching import gen_xmatch
 from simult_fit import fit_astrom_simult
 
 
-root_path = "/storage/goto/gotophoto/storage/pipeline/2020-01-04/final/r0230719_UT8.fits"
+root_path = "/storage/goto/gotophoto/storage/pipeline/2020-01-04/final/r0230719_UT1.fits"
 
 def astrom_task(infilepath):
     ''' A testing function, showing how to use the functions.
@@ -17,7 +17,7 @@ def astrom_task(infilepath):
         Returns: lots of summary statistics as a placeholder for actual QA functions.
     '''
     tick_xmatch = time()
-    _platecoords, _skycoords = gen_xmatch(infilepath, prune=False)
+    _platecoords, _skycoords = gen_xmatch(infilepath, prune=True)
     tock_xmatch = time()
     header = fits.getheader(infilepath, 1)
     head_wcs = WCS(header)
