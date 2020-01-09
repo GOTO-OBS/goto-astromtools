@@ -50,7 +50,10 @@ def return_scalerot(arr, in_wcs):
     return trial_wcs
 
 def tweak_all_simult(arr, _platecoords, _skycoords, in_wcs):
-    crx, cry, dscale, drot, a02, a11, a20, b02, b11, b20,a03, a30, b03, b30 = arr
+    ''' The all-important function, takes an array and modifies WCS, then
+        computes residual
+    '''
+    crx, cry, dscale, drot, a02, a11, a20, b02, b11, b20, a12, a21, b12, b21, a03, a30, b03, b30 = arr
     trial_wcs = in_wcs.deepcopy()
 
     ### Linear tweaks
@@ -71,6 +74,11 @@ def tweak_all_simult(arr, _platecoords, _skycoords, in_wcs):
     trial_wcs.sip.b[0][2] = b02
     trial_wcs.sip.b[1][1] = b11
     trial_wcs.sip.b[2][0] = b20
+
+    trial_wcs.sip.a[1][2] = a12
+    trial_wcs.sip.a[2][1] = a21
+    trial_wcs.sip.b[1][2] = b12
+    trial_wcs.sip.b[2][1] = b21
 
     trial_wcs.sip.a[0][3] = a03
     trial_wcs.sip.a[3][0] = a30
@@ -83,7 +91,9 @@ def tweak_all_simult(arr, _platecoords, _skycoords, in_wcs):
     return resid.flatten()
 
 def return_fullwcs(arr, in_wcs):
-    crx, cry, dscale, drot, a02, a11, a20, b02, b11, b20,a03, a30, b03, b30 = arr
+    ''' Convenience function for modifying WCS in place.
+    '''
+    crx, cry, dscale, drot, a02, a11, a20, b02, b11, b20, a12, a21, b12, b21, a03, a30, b03, b30 = arr
     trial_wcs = in_wcs.deepcopy()
 
     ### Linear tweaks
@@ -104,6 +114,11 @@ def return_fullwcs(arr, in_wcs):
     trial_wcs.sip.b[0][2] = b02
     trial_wcs.sip.b[1][1] = b11
     trial_wcs.sip.b[2][0] = b20
+
+    trial_wcs.sip.a[1][2] = a12
+    trial_wcs.sip.a[2][1] = a21
+    trial_wcs.sip.b[1][2] = b12
+    trial_wcs.sip.b[2][1] = b21
 
     trial_wcs.sip.a[0][3] = a03
     trial_wcs.sip.a[3][0] = a30
@@ -133,9 +148,10 @@ def fit_astrom_simult(_platecoords, _skycoords, header):
 
     initLIN = [crval[0], crval[1], 1, 0]
     initQUAD = [SIP_A[0][2], SIP_A[1][1], SIP_A[2][0], SIP_B[0][2], SIP_B[1][1], SIP_B[2][0]]
-    initCUBIC = [SIP_A[0][3], SIP_A[3][0], SIP_B[0][3], SIP_B[3][0]]
+    initCUBIC1 = [SIP_A[1][2], SIP_A[2][1], SIP_B[1][2], SIP_B[2][1]]
+    initCUBIC2 = [SIP_A[0][3], SIP_A[3][0], SIP_B[0][3], SIP_B[3][0]]
 
-    init_vector = initLIN + initQUAD + initCUBIC
+    init_vector = initLIN + initQUAD + initCUBIC1 + initCUBIC2
 
     init_resid = (header_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180/np.pi)*3600 # in arcsec
 

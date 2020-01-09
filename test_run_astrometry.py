@@ -1,13 +1,14 @@
 import numpy as np
 from astropy.wcs import WCS
 from astropy.io import fits
+import time
 
 #### internal modules
 from crossmatching import gen_xmatch, reduce_density
 from simult_fit import fit_astrom_simult
 
 
-root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220305_UT7.fits"
+root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220305_UT2.fits"
 
 def astrom_task(infilepath):
     ''' A testing function, showing how to use the functions.
@@ -15,18 +16,25 @@ def astrom_task(infilepath):
 
         Returns: lots of summary statistics as a placeholder for actual QA functions.
     '''
+    print("XMATCH")
+    tick = time.time()
     _platecoords, _skycoords = gen_xmatch(infilepath, prune=True)
 
     ### If field is dense even after the pruning in gen_xmatch, reduce density
     if len(_platecoords) > 40000:
         _platecoords, _skycoords = reduce_density(_platecoords, _skycoords, 2)
 
+    tock = time.time()
+    print("XMATCH DONE IN %s s" % (np.round(tock - tick, 3)))
     header = fits.getheader(infilepath, 1)
     head_wcs = WCS(header)
     resid_before = (head_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
-
+    print("ASTROMETRY")
+    tick = time.time()
     new_wcs = fit_astrom_simult(_platecoords, _skycoords, header)
     resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
+    tock = time.time()
+    print("ASTROMETRY DONE IN %s s" % (np.round(tock - tick, 3)))
 
     filename = infilepath.split("/")[-1]
     pre_med = np.average(np.median(resid_before, axis=0))
@@ -39,5 +47,6 @@ def astrom_task(infilepath):
 
     output = [filename, pre_med, post_med, pre_rms, post_rms, pre_chisq, post_chisq, sourcedens]
     return output
+    print("DONE!")
 
 print(astrom_task(root_path))
