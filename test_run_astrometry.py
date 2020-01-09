@@ -4,11 +4,11 @@ from astropy.wcs import WCS
 from astropy.io import fits
 
 #### internal modules
-from crossmatching import gen_xmatch
+from crossmatching import gen_xmatch, isotropise
 from simult_fit import fit_astrom_simult
 
 
-root_path = "/storage/goto/gotophoto/storage/pipeline/2020-01-04/final/r0230719_UT1.fits"
+root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220305_UT7.fits"
 
 def astrom_task(infilepath):
     ''' A testing function, showing how to use the functions.
@@ -18,6 +18,10 @@ def astrom_task(infilepath):
     '''
     tick_xmatch = time()
     _platecoords, _skycoords = gen_xmatch(infilepath, prune=True)
+
+    if len(_platecoords) > 40000:
+        _platecoords, _skycoords = isotropise(_platecoords, _skycoords, 2)
+
     tock_xmatch = time()
     header = fits.getheader(infilepath, 1)
     head_wcs = WCS(header)

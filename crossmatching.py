@@ -101,3 +101,39 @@ def gen_xmatch(fpath, prune):
     _platecoords = np.vstack((_xs, _ys)).T
 
     return _platecoords, _skycoords
+
+def reduce_density(platecoords, skycoords, reduce_factor):
+    STEPX = 1022
+    STEPY = 1022
+    SIZEX = 8176
+    SIZEY = 6132
+
+    ### Fixed here for convenience
+    xcorners = np.arange(0, SIZEX, STEPX)
+    ycorners = np.arange(0, SIZEY, STEPY)
+
+    xs, ys = platecoords[:,0], platecoords[:,1]
+    ras, decs = skycoords[:,0], skycoords[:,1]
+
+    xiso, yiso = [], []
+    raiso, deciso = [], []
+
+    init_source_dens = len(xs) / (SIZEX*SIZEY)
+
+    for i, x in enumerate(xcorners):
+        for j, y in enumerate(ycorners):
+            mask = (xs > x) & (xs < x + STEPX) & (ys > y) & (ys < y + STEPY)
+            srccount = np.sum(mask)
+
+            idxs = np.arange(0, srccount, 1)
+            choice_idxs = np.random.choice(idxs, (1, int(np.ceil(srccount/reduce_factor))))
+
+            xiso = np.concatenate((xiso, xs[mask][choice_idxs].flatten()), axis=0)
+            yiso = np.concatenate((yiso, ys[mask][choice_idxs].flatten()), axis=0)
+            raiso = np.concatenate((raiso, ras[mask][choice_idxs].flatten()), axis=0)
+            deciso = np.concatenate((deciso, decs[mask][choice_idxs].flatten()), axis=0)
+
+    platecoord_reduced = np.vstack((xiso, yiso)).T
+    skycoord_reduced = np.array((raiso, deciso)).T
+
+    return platecoord_reduced, skycoord_reduced
