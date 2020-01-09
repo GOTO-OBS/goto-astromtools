@@ -12,6 +12,107 @@ from astropy.time import Time
 from astropy.wcs import WCS, InvalidTransformError
 from scipy.optimize import least_squares
 
+def tweak_scalerot(arr, _platecoords, _skycoords, in_wcs):
+    ''' Return residual from a linear WCS InvalidTransformError
+        arr -- [CRPIX1, CRPIX2, linear scale change, rotation]
+        _platecoords, _skycoords are detector coords in px
+        and world coords, in degrees
+        in_wcs is the guess wcs
+    '''
+    crx, cry, dscale, drot = arr
+    trial_wcs = in_wcs.deepcopy()
+    trn_matr = trial_wcs.wcs.pc
+    trial_wcs.wcs.crval = np.array([crx, cry])
+
+    cos, sin = np.cos(drot), np.sin(drot)
+    rot_matr = np.array([(cos,-sin), (sin, cos)])
+
+    newpc = np.matmul(rot_matr, trn_matr) * dscale
+    trial_wcs.wcs.pc = newpc
+
+    newcoord = trial_wcs.all_pix2world(_platecoords, 0)
+    resid = (newcoord - _skycoords * 180/np.pi)
+
+    return resid.flatten()
+
+def return_scalerot(arr, in_wcs):
+    crx, cry, dscale, drot = arr
+    trial_wcs = in_wcs.deepcopy()
+    trn_matr = trial_wcs.wcs.pc
+    trial_wcs.wcs.crval = np.array([crx, cry])
+
+    cos, sin = np.cos(drot), np.sin(drot)
+    rot_matr = np.array([(cos,-sin), (sin, cos)])
+
+    newpc = np.matmul(rot_matr, trn_matr) * dscale
+    trial_wcs.wcs.pc = newpc
+
+    return trial_wcs
+
+def tweak_all_simult(arr, _platecoords, _skycoords, in_wcs):
+    crx, cry, dscale, drot, a02, a11, a20, b02, b11, b20,a03, a30, b03, b30 = arr
+    trial_wcs = in_wcs.deepcopy()
+
+    ### Linear tweaks
+    trn_matr = trial_wcs.wcs.pc
+    trial_wcs.wcs.crval = np.array([crx, cry])
+
+    cos, sin = np.cos(drot), np.sin(drot)
+    rot_matr = np.array([(cos,-sin), (sin, cos)])
+
+    newpc = np.matmul(rot_matr, trn_matr) * dscale
+    trial_wcs.wcs.pc = newpc
+
+    ### Now set new SIPs
+    trial_wcs.sip.a[0][2] = a02
+    trial_wcs.sip.a[1][1] = a11
+    trial_wcs.sip.a[2][0] = a20
+
+    trial_wcs.sip.b[0][2] = b02
+    trial_wcs.sip.b[1][1] = b11
+    trial_wcs.sip.b[2][0] = b20
+
+    trial_wcs.sip.a[0][3] = a03
+    trial_wcs.sip.a[3][0] = a30
+    trial_wcs.sip.b[0][3] = b03
+    trial_wcs.sip.b[3][0] = b30
+
+    newcoord = trial_wcs.all_pix2world(_platecoords, 0)
+    resid = (newcoord - _skycoords * 180/np.pi)
+
+    return resid.flatten()
+
+def return_fullwcs(arr, in_wcs):
+    crx, cry, dscale, drot, a02, a11, a20, b02, b11, b20,a03, a30, b03, b30 = arr
+    trial_wcs = in_wcs.deepcopy()
+
+    ### Linear tweaks
+    trn_matr = trial_wcs.wcs.pc
+    trial_wcs.wcs.crval = np.array([crx, cry])
+
+    cos, sin = np.cos(drot), np.sin(drot)
+    rot_matr = np.array([(cos,-sin), (sin, cos)])
+
+    newpc = np.matmul(rot_matr, trn_matr) * dscale
+    trial_wcs.wcs.pc = newpc
+
+    ### Now set new SIPs
+    trial_wcs.sip.a[0][2] = a02
+    trial_wcs.sip.a[1][1] = a11
+    trial_wcs.sip.a[2][0] = a20
+
+    trial_wcs.sip.b[0][2] = b02
+    trial_wcs.sip.b[1][1] = b11
+    trial_wcs.sip.b[2][0] = b20
+
+    trial_wcs.sip.a[0][3] = a03
+    trial_wcs.sip.a[3][0] = a30
+    trial_wcs.sip.b[0][3] = b03
+    trial_wcs.sip.b[3][0] = b30
+
+    return trial_wcs
+
+
 def fit_astrom_simult(_platecoords, _skycoords, header):
     ''' Ingest a set of cross-matched coordinates and
         an approximate WCS solution from astrometry.net.
@@ -23,100 +124,6 @@ def fit_astrom_simult(_platecoords, _skycoords, header):
         header -- the input FITS header, optionally containing SIP coefficients.
     '''
 
-    def tweak_scalerot(arr):
-        crx, cry, dscale, drot = arr
-        trial_wcs = header_wcs.deepcopy()
-        trn_matr = trial_wcs.wcs.pc
-        trial_wcs.wcs.crval = np.array([crx, cry])
-
-        cos, sin = np.cos(drot), np.sin(drot)
-        rot_matr = np.array([(cos,-sin), (sin, cos)])
-
-        newpc = np.matmul(rot_matr, trn_matr) * dscale
-        trial_wcs.wcs.pc = newpc
-
-        newcoord = trial_wcs.all_pix2world(_platecoords, 0)
-        resid = (newcoord - _skycoords * 180/np.pi)
-
-
-        return resid.flatten()
-
-    def return_scalerot(in_wcs, arr):
-        crx, cry, dscale, drot = arr
-        trial_wcs = in_wcs.deepcopy()
-        trn_matr = trial_wcs.wcs.pc
-        trial_wcs.wcs.crval = np.array([crx, cry])
-
-        cos, sin = np.cos(drot), np.sin(drot)
-        rot_matr = np.array([(cos,-sin), (sin, cos)])
-
-        newpc = np.matmul(rot_matr, trn_matr) * dscale
-        trial_wcs.wcs.pc = newpc
-
-        return trial_wcs
-
-    def tweak_all_simult(arr):
-        crx, cry, dscale, drot, a02, a11, a20, b02, b11, b20,a03, a30, b03, b30 = arr
-        trial_wcs = header_wcs.deepcopy()
-
-        ### Linear tweaks
-        trn_matr = trial_wcs.wcs.pc
-        trial_wcs.wcs.crval = np.array([crx, cry])
-
-        cos, sin = np.cos(drot), np.sin(drot)
-        rot_matr = np.array([(cos,-sin), (sin, cos)])
-
-        newpc = np.matmul(rot_matr, trn_matr) * dscale
-        trial_wcs.wcs.pc = newpc
-
-        ### Now set new SIPs
-        trial_wcs.sip.a[0][2] = a02
-        trial_wcs.sip.a[1][1] = a11
-        trial_wcs.sip.a[2][0] = a20
-
-        trial_wcs.sip.b[0][2] = b02
-        trial_wcs.sip.b[1][1] = b11
-        trial_wcs.sip.b[2][0] = b20
-
-        trial_wcs.sip.a[0][3] = a03
-        trial_wcs.sip.a[3][0] = a30
-        trial_wcs.sip.b[0][3] = b03
-        trial_wcs.sip.b[3][0] = b30
-
-        newcoord = trial_wcs.all_pix2world(_platecoords, 0)
-        resid = (newcoord - _skycoords * 180/np.pi)
-
-        return resid.flatten()
-
-    def return_fullwcs(in_wcs, arr):
-        crx, cry, dscale, drot, a02, a11, a20, b02, b11, b20,a03, a30, b03, b30 = arr
-        trial_wcs = in_wcs.deepcopy()
-
-        ### Linear tweaks
-        trn_matr = trial_wcs.wcs.pc
-        trial_wcs.wcs.crval = np.array([crx, cry])
-
-        cos, sin = np.cos(drot), np.sin(drot)
-        rot_matr = np.array([(cos,-sin), (sin, cos)])
-
-        newpc = np.matmul(rot_matr, trn_matr) * dscale
-        trial_wcs.wcs.pc = newpc
-
-        ### Now set new SIPs
-        trial_wcs.sip.a[0][2] = a02
-        trial_wcs.sip.a[1][1] = a11
-        trial_wcs.sip.a[2][0] = a20
-
-        trial_wcs.sip.b[0][2] = b02
-        trial_wcs.sip.b[1][1] = b11
-        trial_wcs.sip.b[2][0] = b20
-
-        trial_wcs.sip.a[0][3] = a03
-        trial_wcs.sip.a[3][0] = a30
-        trial_wcs.sip.b[0][3] = b03
-        trial_wcs.sip.b[3][0] = b30
-
-        return trial_wcs
 
     header_wcs = WCS(header)
 
@@ -135,11 +142,11 @@ def fit_astrom_simult(_platecoords, _skycoords, header):
     ### Need bounds for the linear transform otherwise get degeneracy in rotation angle
     bds = ((0, -90, 0, -np.pi/2), (360, 90, np.inf, np.pi/2))
 
-    res_lin = least_squares(tweak_scalerot, initLIN, bounds=bds, x_scale='jac')
-    header_wcs = return_scalerot(header_wcs, res_lin.x)
+    res_lin = least_squares(tweak_scalerot, x0=initLIN, args=(_platecoords, _skycoords, header_wcs), bounds=bds, x_scale='jac')
+    header_wcs = return_scalerot(res_lin.x, header_wcs)
     crval = res_lin.x
 
-    res_cubic = least_squares(tweak_all_simult, init_vector, x_scale='jac')
-    header_wcs = return_fullwcs(header_wcs, res_cubic.x)
+    res_cubic = least_squares(tweak_all_simult, x0=init_vector, args=(_platecoords, _skycoords, header_wcs), x_scale='jac')
+    header_wcs = return_fullwcs(res_cubic.x, header_wcs)
 
     return header_wcs
