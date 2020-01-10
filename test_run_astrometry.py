@@ -5,8 +5,8 @@ import time
 
 
 #### internal modules
-from crossmatching import gen_xmatch, reduce_density
-from simult_fit import fit_astrom_simult
+from goto_astromtools.crossmatching import gen_xmatch, reduce_density
+from goto_astromtools.simult_fit import fit_astrom_simult
 
 
 root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220083_UT5.fits"

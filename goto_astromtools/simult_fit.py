@@ -2,7 +2,7 @@ import numpy as np
 from time import time
 
 import catsHTM
-from kdsphere import KDSphere
+from goto_astromtools.kdsphere import KDSphere
 
 from astropy.io import fits
 import astropy.units as u

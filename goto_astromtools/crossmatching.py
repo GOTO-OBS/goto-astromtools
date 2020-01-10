@@ -4,7 +4,7 @@ import catsHTM
 from astropy.table import Table
 from astropy.time import Time
 import astropy.units as u
-from kdsphere import KDSphere
+from goto_astromtools.kdsphere import KDSphere
 from os import environ
 
 try:
