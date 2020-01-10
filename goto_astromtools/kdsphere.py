@@ -19,6 +19,7 @@ def spherical_to_cartesian(data, return_radius=False):
     data3D : array, shape (N, 3)
     A 3D Cartesian view of the data. If time is provided, it is mapped to
     the radius.
+    :param return_radius:
     """
     data = np.asarray(data, dtype=float)
 

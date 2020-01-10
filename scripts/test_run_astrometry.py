@@ -1,22 +1,21 @@
-import numpy as np
-from astropy.wcs import WCS
-from astropy.io import fits
 import time
 
+import numpy as np
+from astropy.io import fits
+from astropy.wcs import WCS
 
 #### internal modules
 from goto_astromtools.crossmatching import gen_xmatch, reduce_density
 from goto_astromtools.simult_fit import fit_astrom_simult
 
-
 root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220083_UT5.fits"
 
 def astrom_task(infilepath):
-    ''' A testing function, showing how to use the functions.
+    """ A testing function, showing how to use the functions.
         infilepath -- path to image to solveself.
 
         Returns: lots of summary statistics as a placeholder for actual QA functions.
-    '''
+    """
     print("XMATCH")
     tick = time.time()
     _platecoords, _skycoords = gen_xmatch(infilepath, prune=True)
@@ -43,7 +42,6 @@ def astrom_task(infilepath):
 
     ### Some logic here about the quality of fit compared to the old fit.
     ### If the RMS is greater than the x-match radius we can't expect good fitting.
-    bad_astromnet = (pre_rms > 5)
 
     ### Check - is the refitted solution worse than the existing one?
     bad_mycode1 = (np.abs(pre_med) - np.abs(post_med) < 0) & (pre_rms - post_rms < 0)
@@ -55,8 +53,6 @@ def astrom_task(infilepath):
         ### but for ones with initially good solutions where we make it worse
         ### it seems to do the trick
         xinit, yinit = header["CRPIX1"], header["CRPIX2"]
-        deltas_x = np.random.uniform(-2, 2, 5)
-        deltas_y = np.random.uniform(-2, 2, 5)
 
         randtweak = np.random.uniform(-2, 2, (50,2))
 
@@ -67,7 +63,6 @@ def astrom_task(infilepath):
             new_wcs = fit_astrom_simult(_platecoords, _skycoords, header)
             resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
 
-            post_med = np.average(np.median(resid, axis=0))
             #post_rms = np.average(np.std(resid, axis=0))
             median_good = np.abs(np.median(resid)) < np.abs(pre_med)
             #rms_good = np.std(resid) < pre_rms
@@ -77,11 +72,7 @@ def astrom_task(infilepath):
             if good_status:
                 break
 
-        post_med = np.average(np.median(resid, axis=0))
-        post_rms = np.average(np.std(resid, axis=0))
-
         median_good = np.abs(np.median(resid)) < np.abs(pre_med)
-        rms_good = np.std(resid) < pre_rms
         chisq_good = np.sum(resid**2) < np.sum(resid_before**2)
         good_status = median_good & chisq_good
 
@@ -106,6 +97,5 @@ def astrom_task(infilepath):
 
     output = [filename, pre_med, post_med, pre_rms, post_rms, pre_chisq, post_chisq, sourcedens]
     return header, output
-    print("DONE!")
 
 print(astrom_task(root_path)[1])

@@ -15,7 +15,7 @@ except:
 
 
 def gen_xmatch(fpath, prune):
-    ''' Given a FITS file, cross-match the WCS position with a catalogs
+    """ Given a FITS file, cross-match the WCS position with a catalogs
         using the catsHTM module. Optionally, prune the catalog of 'bad'
         stars before performing the cross-match.
 
@@ -25,7 +25,7 @@ def gen_xmatch(fpath, prune):
         _platecoords - x,y positions of sources from table that were x-matched
         _skycoords - corresponding RA, DEC positionsself.
         Both return as 2xN arrays.
-    '''
+    """
     hdul = fits.open(fpath, mode='readonly')
     header = hdul[1].header
     photom_table = Table(hdul[3].data)
@@ -65,7 +65,6 @@ def gen_xmatch(fpath, prune):
         ### Gaia recommended quality flags
         astrom_excess_noise_flg = ~np.isnan(cat_table_xm["ExcessNoise"]) & (cat_table_xm["ExcessNoise"] < 1)
         plx_exists_flg = ~np.isnan(cat_table_xm["Plx"])
-        nan_cleaned = astrom_excess_noise_flg & plx_exists_flg
         plx_cut_flg = cat_table_xm["Plx"]/cat_table_xm["ErrPlx"] > 5
 
         astrom_cut_flg = astrom_excess_noise_flg & plx_exists_flg & plx_cut_flg
@@ -116,8 +115,6 @@ def reduce_density(platecoords, skycoords, reduce_factor):
 
     xiso, yiso = [], []
     raiso, deciso = [], []
-
-    init_source_dens = len(xs) / (SIZEX*SIZEY)
 
     for x in xcorners:
         for y in ycorners:
