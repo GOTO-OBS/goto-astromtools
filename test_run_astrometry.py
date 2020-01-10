@@ -9,7 +9,7 @@ from crossmatching import gen_xmatch, reduce_density
 from simult_fit import fit_astrom_simult
 
 
-root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220083_UT6.fits"
+root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220083_UT5.fits"
 
 def astrom_task(infilepath):
     ''' A testing function, showing how to use the functions.

@@ -119,8 +119,8 @@ def reduce_density(platecoords, skycoords, reduce_factor):
 
     init_source_dens = len(xs) / (SIZEX*SIZEY)
 
-    for i, x in enumerate(xcorners):
-        for j, y in enumerate(ycorners):
+    for x in xcorners:
+        for y in ycorners:
             mask = (xs > x) & (xs < x + STEPX) & (ys > y) & (ys < y + STEPY)
             srccount = np.sum(mask)
 
