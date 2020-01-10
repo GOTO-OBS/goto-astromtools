@@ -2,8 +2,7 @@ import numpy as np
 from astropy.wcs import WCS
 from astropy.io import fits
 import time
-import itertools
-from tqdm import tqdm
+
 
 #### internal modules
 from crossmatching import gen_xmatch, reduce_density
@@ -84,8 +83,6 @@ def astrom_task(infilepath):
         median_good = np.abs(np.median(resid)) < np.abs(pre_med)
         rms_good = np.std(resid) < pre_rms
         chisq_good = np.sum(resid**2) < np.sum(resid_before**2)
-
-
         good_status = median_good & chisq_good
 
         if good_status:
