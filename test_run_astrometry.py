@@ -51,16 +51,17 @@ def astrom_task(infilepath):
 
     if bad_mycode1:
         print("Astrometry failed - trying CRPIX tweak trick")
-
         ### CRPIX tweak - bounce the reference pixel around to try and
-        ### get out of the local minimum. This won't work for
+        ### get out of the local minimum. This won't work for the worst frames
+        ### but for ones with initially good solutions where we make it worse
+        ### it seems to do the trick
         xinit, yinit = header["CRPIX1"], header["CRPIX2"]
         deltas_x = np.random.uniform(-2, 2, 5)
         deltas_y = np.random.uniform(-2, 2, 5)
 
-        iterator = list(itertools.product(deltas_x, deltas_y))
+        randtweak = np.random.uniform(-2, 2, (50,2))
 
-        for l in tqdm(iterator):
+        for l in randtweak:
             header["CRPIX1"] = xinit + l[0]
             header["CRPIX2"] = yinit + l[1]
 
@@ -68,12 +69,11 @@ def astrom_task(infilepath):
             resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
 
             post_med = np.average(np.median(resid, axis=0))
-            post_rms = np.average(np.std(resid, axis=0))
+            #post_rms = np.average(np.std(resid, axis=0))
             median_good = np.abs(np.median(resid)) < np.abs(pre_med)
-            rms_good = np.std(resid) < pre_rms
+            #rms_good = np.std(resid) < pre_rms
             chisq_good = np.sum(resid**2) < np.sum(resid_before**2)
             good_status = median_good & chisq_good
-            print(np.median(resid), np.std(resid))
 
             if good_status:
                 break
@@ -89,9 +89,10 @@ def astrom_task(infilepath):
         good_status = median_good & chisq_good
 
         if good_status:
-            print("CRPIX trick succeeded, check summary statistics as may be suboptimal")
+            print("CRPIX trick succeeded, check summary statistics")
         else:
-            print("CRPIX trick failed, astrometry is invalid")
+            print("CRPIX trick failed, astrometry is invalid - reverting to astrometry.net solution.")
+            header = head_wcs
 
 
     tock = time.time()
@@ -107,7 +108,7 @@ def astrom_task(infilepath):
     sourcedens = len(resid)
 
     output = [filename, pre_med, post_med, pre_rms, post_rms, pre_chisq, post_chisq, sourcedens]
-    return output
+    return header, output
     print("DONE!")
 
-print(astrom_task(root_path))
+print(astrom_task(root_path)[1])
