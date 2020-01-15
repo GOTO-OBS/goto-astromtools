@@ -84,8 +84,8 @@ def gen_xmatch(fpath, prune):
         ### Quick sanity check to make sure the field isn't getting too sparse
         avg_density = (1022**2 / (sizex*sizey))*np.sum(flg)
 
-        if avg_density < 80:
-            print("Less than 80 sources per tile, caution.")
+        if avg_density < 50:
+            print("Less than 50 sources per tile on average, caution.")
     else:
         ### set flag to all true.
         flg = np.full((len(cat_table_xm)), True)
