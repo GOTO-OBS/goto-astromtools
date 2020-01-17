@@ -5,14 +5,16 @@ from astropy.table import Table
 from astropy.time import Time
 import astropy.units as u
 from goto_astromtools.kdsphere import KDSphere
-from os import environ
+from os import path
 
 try:
-    catsHTMpath = environ["CATSHTM_PATH"]
-except:
-    print("Defaulting to /storage/goto/catalogs/ -- set your environment variable!")
-    catsHTMpath = "/storage/goto/catalogs/"
+    if path.isdir("/storage/goto/catalogs"):
+        catsHTMpath = "/storage/goto/catalogs"
+    elif path.isdir("/export/gotodata2/catalogs"):
+        catsHTMpath = "/export/gotodata2/catalogs"
 
+except:
+    ValueError("No catalog path found!")
 
 def gen_xmatch(fpath, prune):
     """ Given a FITS file, cross-match the WCS position with a catalogs
