@@ -88,13 +88,17 @@ def astrom_task(infilepath):
     for i, x in enumerate(templ_header.keys()):
         header[x] = templ_header[x]
 
+    hdul = fits.open(infilepath, mode='readonly')
     hdul[1].header = header
+
     try:
         hdul.writeto("outfile.fits")
         runcode = "SUCCESS"
     except:
         runcode = "FAIL"
 
+
+    hdul.close()
     return runcode
 
 
