@@ -27,17 +27,15 @@ def astrom_task(infilepath):
     if len(_platecoords) > 40000:
         _platecoords, _skycoords = reduce_density(_platecoords, _skycoords, 2)
 
-    tock = time.time()
     print("XMATCH DONE IN %s s" % (np.round(tock - tick, 3)))
     header = fits.getheader(infilepath, 1)
     head_wcs = WCS(header)
     resid_before = (head_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180 / np.pi) * 3600
     print("ASTROMETRY")
-    tick = time.time()
     new_wcs = fit_astrom_simult(_platecoords, _skycoords, header)
     resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180 / np.pi) * 3600
 
-    ### Sanity check to make sure we haven't made it worse!
+    # Sanity check to make sure we haven't made it worse!
     pre_med = np.average(np.median(resid_before, axis=0))
     post_med = np.average(np.median(resid, axis=0))
     pre_rms = np.average(np.std(resid_before, axis=0))
@@ -51,17 +49,17 @@ def astrom_task(infilepath):
 
     if bad_mycode1:
         print("Astrometry failed - trying CRPIX tweak trick")
-        ### CRPIX tweak - bounce the reference pixel around to try and
-        ### get out of the local minimum. This won't work for the worst frames
-        ### but for ones with initially good solutions where we make it worse
-        ### it seems to do the trick
+        # CRPIX tweak - bounce the reference pixel around to try and
+        # get out of the local minimum. This won't work for the worst frames
+        # but for ones with initially good solutions where we make it worse
+        # it seems to do the trick
         xinit, yinit = header["CRPIX1"], header["CRPIX2"]
 
         randtweak = np.random.uniform(-2, 2, (50, 2))
 
-        for l in randtweak:
-            header["CRPIX1"] = xinit + l[0]
-            header["CRPIX2"] = yinit + l[1]
+        for pos in randtweak:
+            header["CRPIX1"] = xinit + pos[0]
+            header["CRPIX2"] = yinit + pos[1]
 
             new_wcs = fit_astrom_simult(_platecoords, _skycoords, header)
             resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180 / np.pi) * 3600
