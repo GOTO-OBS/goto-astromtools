@@ -1,5 +1,3 @@
-import time
-
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -10,7 +8,7 @@ from scipy.interpolate import RectBivariateSpline
 from goto_astromtools.crossmatching import gen_xmatch, reduce_density
 from goto_astromtools.simult_fit import fit_astrom_simult
 
-root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220083_UT5.fits"
+root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220080_UT3.fits"
 
 
 def astrom_task(infilepath):
@@ -20,14 +18,12 @@ def astrom_task(infilepath):
         Returns: lots of summary statistics as a placeholder for actual QA functions.
     """
     print("XMATCH")
-    tick = time.time()
     _platecoords, _skycoords = gen_xmatch(infilepath, prune=True)
 
     # If field is dense even after the pruning in gen_xmatch, reduce density
     if len(_platecoords) > 40000:
         _platecoords, _skycoords = reduce_density(_platecoords, _skycoords, 2)
 
-    print("XMATCH DONE IN %s s" % (np.round(tock - tick, 3)))
     header = fits.getheader(infilepath, 1)
     head_wcs = WCS(header)
     resid_before = (head_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180 / np.pi) * 3600
