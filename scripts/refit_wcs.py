@@ -132,10 +132,11 @@ def astrom_task(infilepath):
 
     hdul = fits.open(infilepath, mode='readonly')
     hdul[1].header = header
+    photom = hdul[3].data
 
     # Now time to remake the photometry table, with updated positions and errors.
-    xs =  #
-    ys =  #
+    xs =  photom['x']
+    ys =  photom['y']
     platecoords = np.vstack((xs, ys)).T
 
     ra_new_err = ra_rms_fn(xs, ys, grid=False)
@@ -144,10 +145,13 @@ def astrom_task(infilepath):
     newskycoords = new_wcs.all_pix2world(platecoords, 0)
     ras_new, decs_new = newskycoords[:, 0], newskycoords[:, 1]
 
-    # = ras_new
-    # = decs_new
-    # = ra_new_err  # error from astrometric rms >> point error.
-    # = dec_new_err
+    photom['RA'] = ras_new
+    photom["Dec"] = decs_new
+    photom['ra_err'] = ra_new_err  # error from astrometric rms >> point error.
+    photom['ra_err'] = dec_new_err
+
+    # Overwrite photometry table with updated positions and errors.
+    hdul[3].data = photom
 
     # Write out file to new FITS.
     try:
