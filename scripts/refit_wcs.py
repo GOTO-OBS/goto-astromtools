@@ -88,8 +88,6 @@ def astrom_task(infilepath):
     for i, x in enumerate(templ_header.keys()):
         header[x] = templ_header[x]
 
-
-    hdul = fits.open(infilepath)
     hdul[1].header = header
     try:
         hdul.writeto("outfile.fits")
@@ -100,4 +98,4 @@ def astrom_task(infilepath):
     return runcode
 
 
-print(runcode)
+print(astrom_task(root_path))
