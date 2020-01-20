@@ -5,13 +5,16 @@ from astropy.table import Table
 from astropy.time import Time
 import astropy.units as u
 from goto_astromtools.kdsphere import KDSphere
-from os import path
+from os import path, environ
 
+# Some path checking to work out if you're on GOTO or CSC systems
 try:
     if path.isdir("/storage/goto/catalogs"):
         catsHTMpath = "/storage/goto/catalogs"
     elif path.isdir("/export/gotodata2/catalogs"):
         catsHTMpath = "/export/gotodata2/catalogs"
+    elif path.isdir(environ["CATSHTM_PATH"]):
+        catsHTMpath = environ["CATSHTM_PATH"]
 
 except:
     ValueError("No catalog path found!")
