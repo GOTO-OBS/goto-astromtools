@@ -12,6 +12,7 @@ from goto_astromtools.simult_fit import fit_astrom_simult
 root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220080_UT3.fits"
 
 
+
 def astrom_task(infilepath):
     """ A testing function, showing how to use the functions.
         infilepath -- path to image to solveself.
