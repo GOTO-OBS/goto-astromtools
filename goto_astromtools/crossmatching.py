@@ -7,18 +7,6 @@ import astropy.units as u
 from goto_astromtools.kdsphere import KDSphere
 from os import path, environ
 
-# Some path checking to work out if you're on GOTO or CSC systems
-try:
-    if path.isdir("/storage/goto/catalogs"):
-        catsHTMpath = "/storage/goto/catalogs"
-    elif path.isdir("/export/gotodata2/catalogs"):
-        catsHTMpath = "/export/gotodata2/catalogs"
-    elif path.isdir(environ["CATSHTM_PATH"]):
-        catsHTMpath = environ["CATSHTM_PATH"]
-
-except:
-    ValueError("No catalog path found!")
-
 def gen_xmatch(fpath, prune):
     """ Given a FITS file, cross-match the WCS position with a catalogs
         using the catsHTM module. Optionally, prune the catalog of 'bad'
@@ -31,6 +19,17 @@ def gen_xmatch(fpath, prune):
         _skycoords - corresponding RA, DEC positionsself.
         Both return as 2xN arrays.
     """
+
+    # Some path checking to work out if you're on GOTO or CSC systems
+    if path.isdir("/storage/goto/catalogs"):
+        catsHTMpath = "/storage/goto/catalogs"
+    elif path.isdir("/export/gotodata2/catalogs"):
+        catsHTMpath = "/export/gotodata2/catalogs"
+    elif path.isdir(environ["CATSHTM_PATH"]):
+
+    else:
+        ValueError("No valid catalog path found - try setting CATSHTM_PATH")
+
     hdul = fits.open(fpath, mode='readonly')
     header = hdul[1].header
     photom_table = Table(hdul[3].data)
