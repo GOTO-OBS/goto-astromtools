@@ -90,7 +90,7 @@ if __name__ == '__main__':
     pool = Pool(20)
 
     for row in pool.map(astrom_task, storage_paths):
-        if row != None:
+        if row is not None:
             results_table.add_row(row)
         else:
             pass
