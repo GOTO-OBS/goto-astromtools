@@ -5,6 +5,8 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 #### internal modules
+from scipy.interpolate import RectBivariateSpline
+
 from goto_astromtools.crossmatching import gen_xmatch, reduce_density
 from goto_astromtools.simult_fit import fit_astrom_simult
 
@@ -82,6 +84,46 @@ def astrom_task(infilepath):
             print("CRPIX trick failed, astrometry is invalid - reverting to astrometry.net solution.")
             new_wcs = head_wcs
 
+    rmsvec = np.std(resid, axis=0)
+
+    rasig, decsig = rmsvec
+
+    header["RA_SIG"] = rasig
+    header["DEC_SIG"] = decsig
+
+    self.logger.info("{}, {}".format(rasig, decsig))
+
+    # Compute RMS mesh from residuals.
+
+    stepx = 1022
+    stepy = 1022
+
+    xcorners = np.arange(0, sizex, stepy)
+    ycorners = np.arange(0, sizey, stepy)
+
+    rms_matrix = np.zeros((len(xcorners), len(ycorners), 2))
+    median_matrix = np.zeros((len(xcorners), len(ycorners), 2))
+    nsources = np.zeros((len(xcorners), len(ycorners), 2))
+
+    _xs, _ys = _platecoords[:, 0], _platecoords[:, 1]
+
+    for i, x in enumerate(xcorners):
+        for j, y in enumerate(ycorners):
+            mask = (_xs > x) & (_xs < x + stepx) & (_ys > y) & (_ys < y + stepy)
+            rms_matrix[i][j] = np.std(resid[mask], axis=0)
+            median_matrix[i][j] = np.median(resid[mask], axis=0)
+            nsources[i][j] = np.sum(mask)
+
+    ra_rms_matrix, dec_rms_matrix = np.dsplit(rms_matrix, 2)
+    ra_rms_matrix.squeeze()
+    dec_rms_matrix.squeeze()
+
+    # Move to tile midpoint coord frame. be careful around detector edges!
+    xpl = xcorners + stepx / 2
+    ypl = ycorners + stepy / 2
+
+    ra_rms_fn = RectBivariateSpline(xpl, ypl, ra_rms_matrix)
+    dec_rms_fn = RectBivariateSpline(xpl, ypl, dec_rms_matrix)
 
     # Write WCS to header
     templ_header = new_wcs.to_header(relax=True)
@@ -91,12 +133,28 @@ def astrom_task(infilepath):
     hdul = fits.open(infilepath, mode='readonly')
     hdul[1].header = header
 
+    # Now time to remake the photometry table, with updated positions and errors.
+    xs =  #
+    ys =  #
+    platecoords = np.vstack((xs, ys)).T
+
+    ra_new_err = ra_rms_fn(xs, ys, grid=False)
+    dec_new_err = dec_rms_fn(xs, ys, grid=False)
+
+    newskycoords = new_wcs.all_pix2world(platecoords, 0)
+    ras_new, decs_new = newskycoords[:, 0], newskycoords[:, 1]
+
+    # = ras_new
+    # = decs_new
+    # = ra_new_err  # error from astrometric rms >> point error.
+    # = dec_new_err
+
+    # Write out file to new FITS.
     try:
         hdul.writeto("outfile.fits")
         runcode = "SUCCESS"
     except:
         runcode = "FAIL"
-
 
     hdul.close()
     return runcode
