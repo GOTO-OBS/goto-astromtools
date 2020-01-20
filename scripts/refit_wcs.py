@@ -82,10 +82,12 @@ def astrom_task(infilepath):
             print("CRPIX trick failed, astrometry is invalid - reverting to astrometry.net solution.")
             new_wcs = head_wcs
 
-    templ_header = new_wcs.to_header(relax=True)
 
+    # Write WCS to header
+    templ_header = new_wcs.to_header(relax=True)
     for i, x in enumerate(templ_header.keys()):
         header[x] = templ_header[x]
+
 
     hdul = fits.open(infilepath)
     hdul[1].header = header
@@ -95,7 +97,7 @@ def astrom_task(infilepath):
     except:
         runcode = "FAIL"
 
-    return None
+    return runcode
 
 
 print(runcode)
