@@ -26,7 +26,7 @@ def gen_xmatch(fpath, prune):
     elif path.isdir("/export/gotodata2/catalogs"):
         catsHTMpath = "/export/gotodata2/catalogs"
     elif path.isdir(environ["CATSHTM_PATH"]):
-
+        catsHTMpath = environ["CATSHTM_PATH"]
     else:
         ValueError("No valid catalog path found - try setting CATSHTM_PATH")
 
