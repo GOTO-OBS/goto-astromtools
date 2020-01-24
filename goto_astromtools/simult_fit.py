@@ -12,7 +12,12 @@ def tweak_scalerot(arr, _platecoords, _skycoords, in_wcs):
     """
     crx, cry, dscale, drot = arr
     trial_wcs = in_wcs.deepcopy()
-    trn_matr = trial_wcs.wcs.pc
+
+    try:
+        trn_matr = trial_wcs.wcs.pc
+    except AttributeError:
+        trn_matr = trial_wcs.wcs.cd
+
     trial_wcs.wcs.crval = np.array([crx, cry])
 
     cos, sin = np.cos(drot), np.sin(drot)
@@ -29,7 +34,12 @@ def tweak_scalerot(arr, _platecoords, _skycoords, in_wcs):
 def return_scalerot(arr, in_wcs):
     crx, cry, dscale, drot = arr
     trial_wcs = in_wcs.deepcopy()
-    trn_matr = trial_wcs.wcs.pc
+
+    try:
+        trn_matr = trial_wcs.wcs.pc
+    except AttributeError:
+        trn_matr = trial_wcs.wcs.cd
+
     trial_wcs.wcs.crval = np.array([crx, cry])
 
     cos, sin = np.cos(drot), np.sin(drot)
@@ -48,7 +58,11 @@ def tweak_all_simult(arr, _platecoords, _skycoords, in_wcs):
     trial_wcs = in_wcs.deepcopy()
 
     ### Linear tweaks
-    trn_matr = trial_wcs.wcs.pc
+    try:
+        trn_matr = trial_wcs.wcs.pc
+    except AttributeError:
+        trn_matr = trial_wcs.wcs.cd
+
     trial_wcs.wcs.crval = np.array([crx, cry])
 
     cos, sin = np.cos(drot), np.sin(drot)
@@ -88,7 +102,11 @@ def return_fullwcs(arr, in_wcs):
     trial_wcs = in_wcs.deepcopy()
 
     ### Linear tweaks
-    trn_matr = trial_wcs.wcs.pc
+    try:
+        trn_matr = trial_wcs.wcs.pc
+    except AttributeError:
+        trn_matr = trial_wcs.wcs.cd
+
     trial_wcs.wcs.crval = np.array([crx, cry])
 
     cos, sin = np.cos(drot), np.sin(drot)
