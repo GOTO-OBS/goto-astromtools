@@ -25,6 +25,7 @@ def tweak_scalerot(arr, _platecoords, _skycoords, in_wcs):
 
     newpc = np.matmul(rot_matr, trn_matr) * dscale
     trial_wcs.wcs.pc = newpc
+    trial_wcs.wcs.cd = newpc
 
     newcoord = trial_wcs.all_pix2world(_platecoords, 0)
     resid = (newcoord - _skycoords * 180/np.pi)
@@ -47,6 +48,7 @@ def return_scalerot(arr, in_wcs):
 
     newpc = np.matmul(rot_matr, trn_matr) * dscale
     trial_wcs.wcs.pc = newpc
+    trial_wcs.wcs.cd = newpc
 
     return trial_wcs
 
@@ -70,6 +72,7 @@ def tweak_all_simult(arr, _platecoords, _skycoords, in_wcs):
 
     newpc = np.matmul(rot_matr, trn_matr) * dscale
     trial_wcs.wcs.pc = newpc
+    trial_wcs.wcs.cd = newpc
 
     ### Now set new SIPs
     trial_wcs.sip.a[0][2] = a02
@@ -114,6 +117,7 @@ def return_fullwcs(arr, in_wcs):
 
     newpc = np.matmul(rot_matr, trn_matr) * dscale
     trial_wcs.wcs.pc = newpc
+    trial_wcs.wcs.cd = newpc
 
     ### Now set new SIPs
     trial_wcs.sip.a[0][2] = a02
