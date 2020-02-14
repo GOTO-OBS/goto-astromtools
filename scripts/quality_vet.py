@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
-from astropy.wcs import WCS
 from astropy.table import Table
 
 from goto_astromtools.crossmatching import gen_xmatch
@@ -10,30 +9,29 @@ from goto_astromtools.simult_fit import fit_astrom_simult
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("filename")
-parser.add_argument("saveplots")
+parser.add_argument("filename", type=str, help="path to the fits file to be analysed")
+parser.add_argument("--showplots", type=bool, default=True, help="show plots instead of saving them")
 
 args = parser.parse_args()
 
-def generate_diagnostic_plots(framepath, showplots):
+
+def generate_diagnostic_plots(framepath, showplots=True):
     # Get Gaia DR2 astrometry cat, without quality cuts to try and replicate current setup
     platecoords, skycoords = gen_xmatch(framepath, prune=False)
 
     xs, ys = platecoords[:, 0], platecoords[:, 1]
 
     header = fits.getheader(framepath, 1)
-    header_wcs = WCS(header)
-    #resid_before = (header_wcs.all_pix2world(platecoords, 0) - skycoords * 180 / np.pi) * 3600
 
-    SIZEX, SIZEY = header["NAXIS1"], header["NAXIS2"]
+    sizex, sizey = header["NAXIS1"], header["NAXIS2"]
     new_wcs = fit_astrom_simult(platecoords, skycoords, header)
     resid = (new_wcs.all_pix2world(platecoords, 0) - skycoords * 180 / np.pi) * 3600
 
-    STEPX = 1022
-    STEPY = 1022
+    stepx = 1022
+    stepy = 1022
 
-    xcorners = np.arange(0, SIZEX, STEPX)
-    ycorners = np.arange(0, SIZEY, STEPY)
+    xcorners = np.arange(0, sizex, stepx)
+    ycorners = np.arange(0, sizey, stepy)
 
     rms_matrix = np.zeros((len(xcorners), len(ycorners)))
     median_matrix = np.zeros((len(xcorners), len(ycorners)))
@@ -41,7 +39,7 @@ def generate_diagnostic_plots(framepath, showplots):
 
     for i, x in enumerate(xcorners):
         for j, y in enumerate(ycorners):
-            mask = (xs > x) & (xs < x + STEPX) & (ys > y) & (ys < y + STEPY)
+            mask = (xs > x) & (xs < x + stepx) & (ys > y) & (ys < y + stepy)
 
             rms_matrix[i][j] = np.std(resid[mask])
             median_matrix[i][j] = np.median(resid[mask])
@@ -50,17 +48,18 @@ def generate_diagnostic_plots(framepath, showplots):
             if np.sum(mask) < 10:
                 print("Nearly empty tile!")
 
-    xpl = xcorners + STEPX / 2
-    ypl = ycorners + STEPY / 2
+    xpl = xcorners + stepx / 2
+    ypl = ycorners + stepy / 2
 
-    ## Residual plot
-    axmm = 4  # arcsec
+    # Residual plot
+    axmm = 3 * np.max(np.std(resid, axis=0))  # arcsecs to fix plot limit
     binno = 50
 
     fixbin = np.linspace(-axmm, axmm, binno)
 
     fig, ax = plt.subplots(2, 2)
     plt.subplots_adjust(hspace=0, wspace=0)
+    plt.minorticks_on()
 
     ax[0][1].remove()
 
@@ -82,8 +81,8 @@ def generate_diagnostic_plots(framepath, showplots):
 
     ax[1][0].set_xlim(-axmm, axmm)
     ax[1][0].set_ylim(-axmm, axmm)
-    ax[1][0].set_xlabel("RA")
-    ax[1][0].set_ylabel("DEC")
+    ax[1][0].set_xlabel("resid. RA")
+    ax[1][0].set_ylabel("resid. DEC")
 
     plt.tight_layout()
 
@@ -99,14 +98,15 @@ def generate_diagnostic_plots(framepath, showplots):
 
     for i, x in enumerate(xcorners):
         for j, y in enumerate(ycorners):
-            mask = (src_x > x) & (src_x < x + STEPX) & (src_y > y) & (src_y < y + STEPY)
+            mask = (src_x > x) & (src_x < x + stepx) & (src_y > y) & (src_y < y + stepy)
 
             raw_srcdens[i][j] = np.sum(mask)
 
     perc_xmatch = (nsources / raw_srcdens)
 
-    ## Contour plots
+    # Contour plots
     fig, ax = plt.subplots(1, 4, sharey=True, figsize=(10, 10), dpi=120)
+    plt.minorticks_on()
 
     ax[0].contourf(xpl, ypl, rms_matrix.T)
     ax[0].set_title("RMS astrom. noise")
@@ -133,7 +133,8 @@ def generate_diagnostic_plots(framepath, showplots):
         plt.savefig("framedensities.png")
 
     # Print a summary to the command line
-    print("### Summary statistics ###\n")
+    print(3 * "\n")
+    print("### Summary statistics\n")
     print("Filename: {}".format(framepath))
     print("Median astrometric RMS: {:>10.3f}\"".format(np.median(rms_matrix)))
     print("Worst RMS tile: {:18.3f}\"".format(np.max(rms_matrix)))
@@ -143,4 +144,4 @@ def generate_diagnostic_plots(framepath, showplots):
     print("Pipeline quality status:     {}".format(flagstr))
 
 
-generate_diagnostic_plots(args.filename, args.saveplots)
+generate_diagnostic_plots(args.filename, args.showplots)
