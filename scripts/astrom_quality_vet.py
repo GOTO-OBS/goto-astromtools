@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.table import Table
+from astropy.wcs import WCS
 
 from goto_astromtools.crossmatching import gen_xmatch
 from goto_astromtools.simult_fit import fit_astrom_simult
@@ -24,7 +25,7 @@ def generate_diagnostic_plots(framepath, showplots=True):
     header = fits.getheader(framepath, 1)
 
     sizex, sizey = header["NAXIS1"], header["NAXIS2"]
-    new_wcs = fit_astrom_simult(platecoords, skycoords, header)
+    new_wcs = WCS(header)
     resid = (new_wcs.all_pix2world(platecoords, 0) - skycoords * 180 / np.pi) * 3600
 
     stepx = 1022
