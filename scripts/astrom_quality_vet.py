@@ -4,7 +4,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.wcs import WCS
 
-from goto_astromtools.crossmatching import gen_xmatch
+from goto_astromtools.crossmatching import gen_xmatch, query_cat
 from goto_astromtools.simult_fit import fit_astrom_simult
 
 import argparse
@@ -16,9 +16,14 @@ parser.add_argument("--showplots", type=bool, default=True, help="show plots ins
 args = parser.parse_args()
 
 
-def generate_diagnostic_plots(framepath, showplots=True):
+def generate_diagnostic_plots(framepath, medsub=False, showplots=True):
     # Get Gaia DR2 astrometry cat, without quality cuts to try and replicate current setup
     platecoords, skycoords = gen_xmatch(framepath, prune=False)
+
+    rawcat_x, rawcat_y = query_cat(framepath)
+    plt.hist2d(rawcat_x, rawcat_y)
+    plt.title("Raw catalog density")
+    plt.show()
 
     xs, ys = platecoords[:, 0], platecoords[:, 1]
 
@@ -27,6 +32,8 @@ def generate_diagnostic_plots(framepath, showplots=True):
     sizex, sizey = header["NAXIS1"], header["NAXIS2"]
     new_wcs = WCS(header)
     resid = (new_wcs.all_pix2world(platecoords, 0) - skycoords * 180 / np.pi) * 3600
+    med_resid = np.median(resid, axis=0)
+    print("Resid_RA: {} \t Resid_DEC: {}".format(med_resid[0], med_resid[1]))
 
     stepx = 1022
     stepy = 1022
@@ -42,8 +49,8 @@ def generate_diagnostic_plots(framepath, showplots=True):
         for j, y in enumerate(ycorners):
             mask = (xs > x) & (xs < x + stepx) & (ys > y) & (ys < y + stepy)
 
-            rms_matrix[i][j] = np.std(resid[mask])
             median_matrix[i][j] = np.median(resid[mask])
+            rms_matrix[i][j] = np.std(resid[mask] - median_matrix[i][j])
             nsources[i][j] = np.sum(mask)
 
             if np.sum(mask) < 10:
@@ -137,6 +144,7 @@ def generate_diagnostic_plots(framepath, showplots=True):
     print(3 * "\n")
     print("### Summary statistics\n")
     print("Filename: {}".format(framepath))
+    print("Refcat used: {}".format(header["CALCAT"]))
     print("Median astrometric RMS: {:>10.3f}\"".format(np.median(rms_matrix)))
     print("Worst RMS tile: {:18.3f}\"".format(np.max(rms_matrix)))
     print("Global cross-matched dets: {:6.1f}%".format(100 * np.sum(perc_xmatch / np.product(np.shape(perc_xmatch)))))

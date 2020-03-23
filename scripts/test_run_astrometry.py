@@ -10,6 +10,7 @@ from goto_astromtools.simult_fit import fit_astrom_simult
 
 root_path = "/storage/goto/gotophoto/storage/pipeline/2019-12-13/final/r0220083_UT5.fits"
 
+
 def astrom_task(infilepath):
     """ A testing function, showing how to use the functions.
         infilepath -- path to image to solveself.
@@ -28,11 +29,11 @@ def astrom_task(infilepath):
     print("XMATCH DONE IN %s s" % (np.round(tock - tick, 3)))
     header = fits.getheader(infilepath, 1)
     head_wcs = WCS(header)
-    resid_before = (head_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
+    resid_before = (head_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180 / np.pi) * 3600
     print("ASTROMETRY")
     tick = time.time()
     new_wcs = fit_astrom_simult(_platecoords, _skycoords, header)
-    resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
+    resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180 / np.pi) * 3600
 
     ### Sanity check to make sure we haven't made it worse!
     pre_med = np.average(np.median(resid_before, axis=0))
@@ -54,26 +55,26 @@ def astrom_task(infilepath):
         ### it seems to do the trick
         xinit, yinit = header["CRPIX1"], header["CRPIX2"]
 
-        randtweak = np.random.uniform(-2, 2, (50,2))
+        randtweak = np.random.uniform(-2, 2, (50, 2))
 
         for l in randtweak:
             header["CRPIX1"] = xinit + l[0]
             header["CRPIX2"] = yinit + l[1]
 
             new_wcs = fit_astrom_simult(_platecoords, _skycoords, header)
-            resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
+            resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180 / np.pi) * 3600
 
-            #post_rms = np.average(np.std(resid, axis=0))
+            # post_rms = np.average(np.std(resid, axis=0))
             median_good = np.abs(np.median(resid)) < np.abs(pre_med)
-            #rms_good = np.std(resid) < pre_rms
-            chisq_good = np.sum(resid**2) < np.sum(resid_before**2)
+            # rms_good = np.std(resid) < pre_rms
+            chisq_good = np.sum(resid ** 2) < np.sum(resid_before ** 2)
             good_status = median_good & chisq_good
 
             if good_status:
                 break
 
         median_good = np.abs(np.median(resid)) < np.abs(pre_med)
-        chisq_good = np.sum(resid**2) < np.sum(resid_before**2)
+        chisq_good = np.sum(resid ** 2) < np.sum(resid_before ** 2)
         good_status = median_good & chisq_good
 
         if good_status:
@@ -81,7 +82,6 @@ def astrom_task(infilepath):
         else:
             print("CRPIX trick failed, astrometry is invalid - reverting to astrometry.net solution.")
             header = head_wcs
-
 
     tock = time.time()
     print("ASTROMETRY DONE IN %s s" % (np.round(tock - tick, 3)))
@@ -91,11 +91,12 @@ def astrom_task(infilepath):
     post_med = np.average(np.median(resid, axis=0))
     pre_rms = np.average(np.std(resid_before, axis=0))
     post_rms = np.average(np.std(resid, axis=0))
-    pre_chisq = np.sum(resid_before**2)
-    post_chisq = np.sum(resid**2)
+    pre_chisq = np.sum(resid_before ** 2)
+    post_chisq = np.sum(resid ** 2)
     sourcedens = len(resid)
 
     output = [filename, pre_med, post_med, pre_rms, post_rms, pre_chisq, post_chisq, sourcedens]
     return header, output
+
 
 print(astrom_task(root_path)[1])

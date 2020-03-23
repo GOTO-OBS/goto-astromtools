@@ -15,6 +15,7 @@ import pandas as pd
 import psycopg2
 from contextlib import contextmanager
 
+
 def astrom_task(infilepath):
     tick_xmatch = time()
     _platecoords, _skycoords = gen_xmatch(infilepath, prune=True)
@@ -23,11 +24,11 @@ def astrom_task(infilepath):
     UT = header["INSTRUME"]
     JD = header["JD"]
     head_wcs = WCS(header)
-    resid_before = (head_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
+    resid_before = (head_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180 / np.pi) * 3600
 
     tick_fit = time()
     new_wcs = fit_astrom_simult(_platecoords, _skycoords, header)
-    resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords*180/np.pi)*3600
+    resid = (new_wcs.all_pix2world(_platecoords, 0) - _skycoords * 180 / np.pi) * 3600
     tock_fit = time()
 
     filename = infilepath.split("/")[-1]
@@ -35,14 +36,16 @@ def astrom_task(infilepath):
     post_med = np.average(np.median(resid, axis=0))
     pre_rms = np.average(np.std(resid_before, axis=0))
     post_rms = np.average(np.std(resid, axis=0))
-    pre_chisq = np.sum(resid_before**2)
-    post_chisq = np.sum(resid**2)
+    pre_chisq = np.sum(resid_before ** 2)
+    post_chisq = np.sum(resid ** 2)
     fittime = np.round(tock_fit - tick_fit, 3)
     xmatchtime = np.round(tock_xmatch - tick_xmatch, 3)
     sourcedens = len(resid)
 
-    output = [filename, UT, JD, pre_med, post_med, pre_rms, post_rms, pre_chisq, post_chisq, fittime, xmatchtime, sourcedens]
+    output = [filename, UT, JD, pre_med, post_med, pre_rms, post_rms, pre_chisq, post_chisq, fittime, xmatchtime,
+              sourcedens]
     return output
+
 
 def amend_paths(inpath, location):
     '''
@@ -54,6 +57,7 @@ def amend_paths(inpath, location):
     if location == "GOTO":
         ### Need to work out the path mapping for GOTO servers.
         return NotImplementedError
+
 
 @contextmanager
 def gotophoto_connection():
@@ -70,6 +74,7 @@ def gotophoto_connection():
         #     yield (conn, cursor)
     conn.close()
 
+
 query = """
         select * from image where
         image_type = 'SCIENCE' and
@@ -77,14 +82,14 @@ query = """
         jd between 2458839.00000 and 2458841.00000
         """
 
-
 with gotophoto_connection() as conn:
     images = pd.read_sql(query, conn)
 
 storage_paths = [amend_paths(i, "CSC") for i in images["filepath"]]
 
 results_table = Table(names=("FNAME", "UT", "JD", "MED_BEF", "MED_AFT", "RMS_BEF", "RMS_AFT", "CHI_BEF", "CHI_AFT",
-"FITTIME", "XMATCHTIME", "SRCDENS"), dtype=("S", "S", "f8", "f8", "f8", "f8", "f8", "f8", "f8", "f8", "f8", "f8"))
+                             "FITTIME", "XMATCHTIME", "SRCDENS"),
+                      dtype=("S", "S", "f8", "f8", "f8", "f8", "f8", "f8", "f8", "f8", "f8", "f8"))
 
 if __name__ == '__main__':
     pool = Pool(20)

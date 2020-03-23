@@ -48,7 +48,8 @@ def gen_xmatch(fpath, prune):
     field_radius_as = field_radius.to(u.arcsec).value
 
     ## Code from krzul's astrometry checker
-    cat_data, col_names, _ = catsHTM.cone_search('GAIADR2', ra_c_rad, dec_c_rad, field_radius_as, catalogs_dir=catsHTMpath)
+    cat_data, col_names, _ = catsHTM.cone_search('GAIADR2', ra_c_rad, dec_c_rad, field_radius_as,
+                                                 catalogs_dir=catsHTMpath)
     cat_data = cat_data[cat_data[:, 15] < 21]  # Mag_G<21
     cat_table = Table(data=cat_data, names=col_names)
 
@@ -56,8 +57,8 @@ def gen_xmatch(fpath, prune):
     tree = KDSphere(cat_coo)
     det_coo_arr = objects["ra", "dec"].as_array()
     det_coo = det_coo_arr.view((det_coo_arr.dtype[0], 2))
-    dist_match_rad = (6*u.arcsec).to(u.radian).value
-            # KDSphere requires radians input and gives radians output
+    dist_match_rad = (6 * u.arcsec).to(u.radian).value
+    # KDSphere requires radians input and gives radians output
     nn_dists, nn_idxs = tree.query(det_coo * np.pi / 180, distance_upper_bound=dist_match_rad)
     mask = np.isfinite(nn_dists)  # select only finite distances (i.e true matches within search radius)
 
@@ -69,24 +70,24 @@ def gen_xmatch(fpath, prune):
         ### Gaia recommended quality flags
         astrom_excess_noise_flg = ~np.isnan(cat_table_xm["ExcessNoise"]) & (cat_table_xm["ExcessNoise"] < 1)
         plx_exists_flg = ~np.isnan(cat_table_xm["Plx"])
-        plx_cut_flg = cat_table_xm["Plx"]/cat_table_xm["ErrPlx"] > 5
+        plx_cut_flg = cat_table_xm["Plx"] / cat_table_xm["ErrPlx"] > 5
 
         astrom_cut_flg = astrom_excess_noise_flg & plx_exists_flg & plx_cut_flg
 
         # SExtractor cuts
-        sat_flag = table_xm["flags"] < 4 # Remove all saturated (and worse) stars from solution
+        sat_flag = table_xm["flags"] < 4  # Remove all saturated (and worse) stars from solution
         snr_flag = table_xm["s2n"] > 20
         photom_cut_flg = sat_flag & snr_flag
 
         #### Reject high proper motion field stars.
-        tot_prop_mot = np.sqrt(cat_table_xm["PMRA"]**2 + cat_table_xm["PMDec"]**2)/1000
+        tot_prop_mot = np.sqrt(cat_table_xm["PMRA"] ** 2 + cat_table_xm["PMDec"] ** 2) / 1000
         int_prop_mot = tot_prop_mot * (Time(header["DATE-MID"]).decimalyear - cat_table_xm["Epoch"])
         pmflg = ~np.isnan(int_prop_mot) & (int_prop_mot < 1)
 
         flg = astrom_cut_flg & photom_cut_flg & pmflg
 
         ### Quick sanity check to make sure the field isn't getting too sparse
-        avg_density = (1022**2 / (sizex*sizey))*np.sum(flg)
+        avg_density = (1022 ** 2 / (sizex * sizey)) * np.sum(flg)
 
         if avg_density < 50:
             print("Less than 50 sources per tile on average, caution.")
@@ -104,6 +105,7 @@ def gen_xmatch(fpath, prune):
 
     return _platecoords, _skycoords
 
+
 def reduce_density(platecoords, skycoords, reduce_factor):
     STEPX = 1022
     STEPY = 1022
@@ -114,8 +116,8 @@ def reduce_density(platecoords, skycoords, reduce_factor):
     xcorners = np.arange(0, SIZEX, STEPX)
     ycorners = np.arange(0, SIZEY, STEPY)
 
-    xs, ys = platecoords[:,0], platecoords[:,1]
-    ras, decs = skycoords[:,0], skycoords[:,1]
+    xs, ys = platecoords[:, 0], platecoords[:, 1]
+    ras, decs = skycoords[:, 0], skycoords[:, 1]
 
     xiso, yiso = [], []
     raiso, deciso = [], []
@@ -126,7 +128,7 @@ def reduce_density(platecoords, skycoords, reduce_factor):
             srccount = np.sum(mask)
 
             idxs = np.arange(0, srccount, 1)
-            choice_idxs = np.random.choice(idxs, (1, int(np.ceil(srccount/reduce_factor))))
+            choice_idxs = np.random.choice(idxs, (1, int(np.ceil(srccount / reduce_factor))))
 
             xiso = np.concatenate((xiso, xs[mask][choice_idxs].flatten()), axis=0)
             yiso = np.concatenate((yiso, ys[mask][choice_idxs].flatten()), axis=0)
