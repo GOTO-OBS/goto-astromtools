@@ -7,6 +7,39 @@ import astropy.units as u
 from goto_astromtools.kdsphere import KDSphere
 from os import path, environ
 
+
+def query_cat(fpath):
+    # Some path checking to work out if you're on GOTO or CSC systems
+    if path.isdir("/storage/goto/catalogs"):
+        catsHTMpath = "/storage/goto/catalogs"
+    elif path.isdir("/export/gotodata2/catalogs"):
+        catsHTMpath = "/export/gotodata2/catalogs"
+    elif path.isdir(environ["CATSHTM_PATH"]):
+        catsHTMpath = environ["CATSHTM_PATH"]
+    else:
+        raise ValueError("No valid catalog path found - try setting CATSHTM_PATH")
+
+    hdul = fits.open(fpath, mode='readonly')
+    header = hdul[1].header
+    hdul.close()
+
+    ra_c = header['cra'] * u.degree
+    ra_c_rad = ra_c.to(u.rad).value
+    dec_c = header['cdec'] * u.degree
+    dec_c_rad = dec_c.to(u.rad).value
+
+    field_radius = 2 * u.degree
+    field_radius_as = field_radius.to(u.arcsec).value
+
+    ## Code from krzul's astrometry checker
+    cat_data, col_names, _ = catsHTM.cone_search('GAIADR2', ra_c_rad, dec_c_rad, field_radius_as,
+                                                 catalogs_dir=catsHTMpath)
+    cat_data = cat_data[cat_data[:, 15] < 21]  # Mag_G<21
+    cat_table = Table(data=cat_data, names=col_names)
+
+    return cat_table["RA"], cat_table["Dec"]
+
+
 def gen_xmatch(fpath, prune):
     """ Given a FITS file, cross-match the WCS position with a catalogs
         using the catsHTM module. Optionally, prune the catalog of 'bad'
