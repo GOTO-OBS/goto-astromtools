@@ -28,6 +28,7 @@
 import numpy as np
 from scipy.spatial import cKDTree
 
+
 def spherical_to_cartesian(data, return_radius=False):
     """Convert spherical coordinates to cartesian coordinates
 
@@ -50,7 +51,7 @@ def spherical_to_cartesian(data, return_radius=False):
     # Data should be two-dimensional
     if data.ndim != 2:
         raise ValueError("data.shape = {0} should be "
-                        "(N, 2) or (N, 3)".format(data.shape))
+                         "(N, 2) or (N, 3)".format(data.shape))
 
     # Data should have 2 or 3 columns
     if data.shape[1] == 2:
@@ -60,16 +61,17 @@ def spherical_to_cartesian(data, return_radius=False):
         lon, lat, r = data.T
     else:
         raise ValueError("data.shape = {0} should be "
-                        "(N, 2) or (N, 3)".format(data.shape))
+                         "(N, 2) or (N, 3)".format(data.shape))
 
     data3d = np.array([r * np.cos(lat) * np.cos(lon),
-                   r * np.cos(lat) * np.sin(lon),
-                   r * np.sin(lat)]).T
+                       r * np.cos(lat) * np.sin(lon),
+                       r * np.sin(lat)]).T
 
     if return_radius:
         return data3d, r
     else:
         return data3d
+
 
 class KDSphere(object):
     """KD Tree for Spherical Data, built on scipy's cKDTree
@@ -81,6 +83,7 @@ class KDSphere(object):
     **kwargs :
         Additional arguments are passed to cKDTree
     """
+
     def __init__(self, data, **kwargs):
         self.data = np.asarray(data)
         self.data3d = spherical_to_cartesian(self.data)

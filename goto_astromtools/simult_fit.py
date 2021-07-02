@@ -3,6 +3,7 @@ import numpy as np
 from astropy.wcs import WCS
 from scipy.optimize import least_squares
 
+
 def tweak_scalerot(arr, _platecoords, _skycoords, in_wcs):
     """
     Return residuals from a linear WCS solution
@@ -33,16 +34,17 @@ def tweak_scalerot(arr, _platecoords, _skycoords, in_wcs):
     trial_wcs.wcs.crval = np.array([crx, cry])
 
     cos, sin = np.cos(drot), np.sin(drot)
-    rot_matr = np.array([(cos,-sin), (sin, cos)])
+    rot_matr = np.array([(cos, -sin), (sin, cos)])
 
     newpc = np.matmul(rot_matr, trn_matr) * dscale
     trial_wcs.wcs.pc = newpc
     trial_wcs.wcs.cd = newpc
 
     newcoord = trial_wcs.all_pix2world(_platecoords, 0)
-    resid = (newcoord - _skycoords * 180/np.pi)
+    resid = (newcoord - _skycoords * 180 / np.pi)
 
     return resid.flatten()
+
 
 def return_scalerot(arr, in_wcs):
     crx, cry, dscale, drot = arr
@@ -56,13 +58,14 @@ def return_scalerot(arr, in_wcs):
     trial_wcs.wcs.crval = np.array([crx, cry])
 
     cos, sin = np.cos(drot), np.sin(drot)
-    rot_matr = np.array([(cos,-sin), (sin, cos)])
+    rot_matr = np.array([(cos, -sin), (sin, cos)])
 
     newpc = np.matmul(rot_matr, trn_matr) * dscale
     trial_wcs.wcs.pc = newpc
     trial_wcs.wcs.cd = newpc
 
     return trial_wcs
+
 
 def tweak_all_simult(arr, _platecoords, _skycoords, in_wcs):
     """ The all-important function, takes an array and modifies WCS, then
@@ -80,7 +83,7 @@ def tweak_all_simult(arr, _platecoords, _skycoords, in_wcs):
     trial_wcs.wcs.crval = np.array([crx, cry])
 
     cos, sin = np.cos(drot), np.sin(drot)
-    rot_matr = np.array([(cos,-sin), (sin, cos)])
+    rot_matr = np.array([(cos, -sin), (sin, cos)])
 
     newpc = np.matmul(rot_matr, trn_matr) * dscale
     trial_wcs.wcs.pc = newpc
@@ -106,9 +109,10 @@ def tweak_all_simult(arr, _platecoords, _skycoords, in_wcs):
     trial_wcs.sip.b[3][0] = b30
 
     newcoord = trial_wcs.all_pix2world(_platecoords, 0)
-    resid = (newcoord - _skycoords * 180/np.pi)
+    resid = (newcoord - _skycoords * 180 / np.pi)
 
     return resid.flatten()
+
 
 def return_fullwcs(arr, in_wcs):
     """ Convenience function for modifying WCS in place.
@@ -125,7 +129,7 @@ def return_fullwcs(arr, in_wcs):
     trial_wcs.wcs.crval = np.array([crx, cry])
 
     cos, sin = np.cos(drot), np.sin(drot)
-    rot_matr = np.array([(cos,-sin), (sin, cos)])
+    rot_matr = np.array([(cos, -sin), (sin, cos)])
 
     newpc = np.matmul(rot_matr, trn_matr) * dscale
     trial_wcs.wcs.pc = newpc
@@ -175,23 +179,25 @@ def fit_astrom_simult(_platecoords, _skycoords, header):
     header_wcs = WCS(header)
 
     crval = header_wcs.wcs.crval
-    SIP_A = header_wcs.sip.a
-    SIP_B = header_wcs.sip.b
+    sip_a = header_wcs.sip.a
+    sip_b = header_wcs.sip.b
 
-    initLIN = [crval[0], crval[1], 1, 0]
-    initQUAD = [SIP_A[0][2], SIP_A[1][1], SIP_A[2][0], SIP_B[0][2], SIP_B[1][1], SIP_B[2][0]]
-    initCUBIC1 = [SIP_A[1][2], SIP_A[2][1], SIP_B[1][2], SIP_B[2][1]]
-    initCUBIC2 = [SIP_A[0][3], SIP_A[3][0], SIP_B[0][3], SIP_B[3][0]]
+    init_lin = [crval[0], crval[1], 1, 0]
+    init_quad = [sip_a[0][2], sip_a[1][1], sip_a[2][0], sip_b[0][2], sip_b[1][1], sip_b[2][0]]
+    init_cubic1 = [sip_a[1][2], sip_a[2][1], sip_b[1][2], sip_b[2][1]]
+    init_cubic2 = [sip_a[0][3], sip_a[3][0], sip_b[0][3], sip_b[3][0]]
 
-    init_vector = initLIN + initQUAD + initCUBIC1 + initCUBIC2
+    init_vector = init_lin + init_quad + init_cubic1 + init_cubic2
 
     ### Need bounds for the linear transform otherwise get degeneracy in rotation angle
-    bds = ((0, -90, 0, -np.pi/2), (360, 90, np.inf, np.pi/2))
+    bds = ((0, -90, 0, -np.pi / 2), (360, 90, np.inf, np.pi / 2))
 
-    res_lin = least_squares(tweak_scalerot, x0=initLIN, args=(_platecoords, _skycoords, header_wcs), bounds=bds, x_scale='jac')
+    res_lin = least_squares(tweak_scalerot, x0=init_lin, args=(_platecoords, _skycoords, header_wcs), bounds=bds,
+                            x_scale='jac')
     header_wcs = return_scalerot(res_lin.x, header_wcs)
 
-    res_cubic = least_squares(tweak_all_simult, x0=init_vector, args=(_platecoords, _skycoords, header_wcs), x_scale='jac')
+    res_cubic = least_squares(tweak_all_simult, x0=init_vector, args=(_platecoords, _skycoords, header_wcs),
+                              x_scale='jac')
     header_wcs = return_fullwcs(res_cubic.x, header_wcs)
 
     return header_wcs
