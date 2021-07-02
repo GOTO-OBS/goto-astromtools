@@ -8,16 +8,24 @@ from goto_astromtools.kdsphere import KDSphere
 from os import path, environ
 
 def gen_xmatch(fpath, prune):
-    """ Given a FITS file, cross-match the WCS position with a catalogs
-        using the catsHTM module. Optionally, prune the catalog of 'bad'
-        stars before performing the cross-match.
+    """
+    Given a FITS file, cross-match the WCS position with a catalogs using the catsHTM module.
+    Optionally, prune the catalog of 'bad' stars before performing the cross-match.
 
-        fpath -- path to the file that needs crossmatching
+    Parameters
+    ----------
+    fpath : str
+        Path to the input file to cross-match
+    prune : bool
+        If true, apply the Gaia recommended quality cuts (Lindegren+2018), filter using SExtractor flags, and reject
+        high proper motion stars.
 
-        Returns:
-        _platecoords - x,y positions of sources from table that were x-matched
-        _skycoords - corresponding RA, DEC positionsself.
-        Both return as 2xN arrays.
+    Returns
+    -------
+    _platecoords
+        x-y detector positions of matched stars
+    _skycoords
+        ra-dec sky positions of matched stars
     """
 
     # Some path checking to work out if you're on GOTO or CSC systems

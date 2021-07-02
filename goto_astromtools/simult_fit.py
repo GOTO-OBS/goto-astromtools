@@ -4,12 +4,24 @@ from astropy.wcs import WCS
 from scipy.optimize import least_squares
 
 def tweak_scalerot(arr, _platecoords, _skycoords, in_wcs):
-    """ Return residual from a linear WCS InvalidTransformError
-        arr -- [CRPIX1, CRPIX2, linear scale change, rotation]
-        _platecoords, _skycoords are detector coords in px
-        and world coords, in degrees
-        in_wcs is the guess wcs
     """
+    Return residuals from a linear WCS solution
+
+    Parameters
+    ----------
+    arr : float
+        NumPy array specifying the linear transform - of the form [CRPIX1, CRPIX2, linear scale, rotation]
+    _platecoords : float
+        Detector coordinates for each matched source, in px
+    _skycoords : float
+        World coordinates (ra/dec) for each mathced source, given in degrees.
+    in_wcs : astropy.wcs.WCS
+        AstroPy WCS object representing the coarse solution from astrometry.net
+    Returns
+    -------
+
+    """
+
     crx, cry, dscale, drot = arr
     trial_wcs = in_wcs.deepcopy()
 
@@ -142,16 +154,23 @@ def return_fullwcs(arr, in_wcs):
 
 
 def fit_astrom_simult(_platecoords, _skycoords, header):
-    """ Ingest a set of cross-matched coordinates and
-        an approximate WCS solution from astrometry.net.
-        Return an accurate refitted WCS
-
-        keyword_args:
-        _platecoords -- detector coordinates of ref stars, in a 2xN array
-        _skycoords -- sky coordinates of ref stars, 2xN array, in decimal degrees.
-        header -- the input FITS header, optionally containing SIP coefficients.
     """
+    Ingest a set of cross-matched coordinates and an approximate WCS solution from astrometry.net.
+    Return an accurate refitted WCS
 
+    Parameters
+    ----------
+    _platecoords : float
+        Detector coordinates for each matched source, in px
+    _skycoords : float
+        World coordinates (ra/dec) for each mathced source, given in degrees.
+    header : astropy.io.fits.Header
+        FITS header for the given frame, given as output by GOTOphoto
+    Returns
+    -------
+    header_wcs : astropy.io.fits.Header
+        FITS header containing newly-updated WCS
+    """
 
     header_wcs = WCS(header)
 

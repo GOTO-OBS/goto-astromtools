@@ -41,7 +41,6 @@ def astrom_task(infilepath):
 
     # Some logic here about the quality of fit compared to the old fit.
     # If the RMS is greater than the x-match radius we can't expect good fitting.
-
     ### Check - is the refitted solution worse than the existing one?
     bad_mycode1 = (np.abs(pre_med) - np.abs(post_med) < 0) & (pre_rms - post_rms < 0)
 
